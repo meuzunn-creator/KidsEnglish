@@ -315,8 +315,8 @@ details.bk .wrow{border-width:2px}
 .sub{margin:2px 0 12px;font-weight:800;color:var(--ink2);font-size:14px}
 .jlist{display:flex;flex-direction:column;gap:10px}
 .jkb{display:flex;align-items:center;gap:10px;width:100%;background:#fff;border:3px solid #fde68a;border-radius:18px;padding:8px 10px;text-align:left;box-shadow:0 5px 0 #f2cf6a;transition:transform .12s}
-.jkb:hover:not(:disabled){transform:translateY(-3px)}
-.jkb:disabled{opacity:.45;filter:grayscale(.8);cursor:not-allowed}
+.jkb:hover:not(:disabled):not(.off){transform:translateY(-3px)}
+.jkb:disabled,.jkb.off{opacity:.45;filter:grayscale(.8);cursor:not-allowed}
 .jkb .ji{width:48px;height:48px;flex:none;border-radius:14px;background:radial-gradient(circle at 40% 30%,#fffbeb,#fde68a);display:grid;place-items:center}
 .jkb .ji .i3d{width:34px;height:34px}
 .jkb b{display:block;font-size:16px}
@@ -565,7 +565,7 @@ body.mob .jbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6p
 .jround>.i3d{width:24px;height:24px}
 .jround .c{display:flex;align-items:center;gap:1px;font-size:12px;color:#b45309}
 .jround .c .i3d{width:12px;height:12px}
-.jround:disabled{opacity:.4;filter:grayscale(.8)}
+.jround:disabled,.jround.off{opacity:.4;filter:grayscale(.8)}
 
 /* home */
 body.mob .mhero{display:flex;align-items:center;gap:12px}
@@ -769,11 +769,12 @@ LEVELS.forEach(L=>(L.items||[]).forEach(it=>{it.lv=L.id;it.key=L.id+'|'+it.en;AL
 const LV=id=>LEVELS.find(l=>l.id===id);
 
 const JOKERS=[
-  {id:'hint', icon:'💡',name:'İpucu',cost:5, desc:'Türkçesini ya da ilk harfleri gör'},
-  {id:'half', icon:'✂️',name:'Yarı Yarıya',cost:15,desc:'İki yanlış şıkkı sil'},
-  {id:'skip', icon:'⏭️',name:'Pas Geç',cost:10,desc:'Soruyu cezasız geç'},
-  {id:'heart',icon:'❤️',name:'Ekstra Can',cost:20,desc:'Bir can kazan (en çok 5)'}
+  {id:'hint', icon:'💡',name:'İpucu',cost:50, desc:'Türkçesini ya da ilk harfleri gör'},
+  {id:'skip', icon:'⏭️',name:'Pas Geç',cost:80,desc:'Soruyu cezasız geç'},
+  {id:'half', icon:'✂️',name:'Yarı Yarıya',cost:100,desc:'İki yanlış şıkkı sil'},
+  {id:'heart',icon:'❤️',name:'Ekstra Can',cost:150,desc:'Sadece 1 canın kalınca (en çok 3)'}
 ];
+const JOKER_LIMIT=2; // bir turda en fazla kaç joker kullanılabilir
 const BADGES=[
   {id:'ilk',i:'🌟',n:'İlk Adım',d:'İlk doğru cevabını ver'},
   {id:'seri5',i:'🔥',n:'Seri Ustası',d:'Üst üste 5 doğru yap'},
@@ -951,7 +952,7 @@ function startReview(kind){
   beginQuiz({mode:'review',kind,level:{id:'r',name:kind==='wrong'?'Yanlışlarımı Tekrar':'Karışık Tekrar',icon:'🔁'},items});
 }
 function beginQuiz(o){
-  G=Object.assign(o,{idx:0,hearts:o.mode==='review'?Infinity:3,correct:0,wrongN:0,skips:0,streak:0,failed:false,log:[],wrongItems:[],lastType:null});
+  G=Object.assign(o,{idx:0,hearts:o.mode==='review'?Infinity:3,jokersUsed:[],correct:0,wrongN:0,skips:0,streak:0,failed:false,log:[],wrongItems:[],lastType:null});
   UI.screen='quiz';
   mascot('happy',o.mode==='review'?'Tekrar zamanı! Burada canın sonsuz, rahatça dene. 💙':'Hadi başlayalım! Her doğru cevap +10 puan! ⭐','jump');
   loadQ();
@@ -994,7 +995,7 @@ function check(){
     S.wrong[it.key]=(S.wrong[it.key]||0)+1;
     if(G.mode!=='review')G.hearts--;
     sfx('wrong');redFlash();
-    mascot('sad',G.hearts<=0?'Canın bitti! İstersen ❤️ Ekstra Can jokeriyle devam edebilirsin.':pick(ENCOURAGE),'shake');
+    mascot('sad',G.hearts<=0?(canJoker(JOKERS.find(x=>x.id==='heart'))?'Canın bitti! İstersen ❤️ Ekstra Can jokeriyle devam edebilirsin.':'Canın bitti! Bir dahaki sefere başaracaksın. 💪'):pick(ENCOURAGE),'shake');
     save();render();
   }
   setTimeout(()=>speak(q.type==='gram'?it.a:it.en),ok?650:800);
@@ -1032,10 +1033,17 @@ function addPoints(n){
 }
 
 /* ---------- Jokerler ---------- */
+function jokerBlock(j){
+  if(UI.screen!=='quiz'||!G)return 'Jokerler sadece oyun sırasında kullanılır.';
+  const used=G.jokersUsed||[];
+  if(used.includes(j.id))return 'Bu jokeri bu turda zaten kullandın.';
+  if(used.length>=JOKER_LIMIT)return `Bir turda en fazla ${JOKER_LIMIT} joker kullanabilirsin.`;
+  if(S.points<j.cost)return `Bu joker için ${j.cost} puan lazım. Doğru cevaplarla puan topla!`;
+  return '';
+}
 function canJoker(j){
-  if(UI.screen!=='quiz'||!G)return false;
-  if(S.points<j.cost)return false;
-  if(j.id==='heart')return G.mode!=='review'&&G.hearts<5&&(!G.answered||G.hearts<=0);
+  if(jokerBlock(j))return false;
+  if(j.id==='heart')return G.mode!=='review'&&G.hearts<=1&&(!G.answered||G.hearts<=0);
   if(G.answered)return false;
   if(j.id==='hint')return !G.hint;
   if(j.id==='half')return G.q.type!=='order'&&G.q.type!=='gram'&&!G.removed.length;
@@ -1045,10 +1053,11 @@ function useJoker(id){
   const j=JOKERS.find(x=>x.id===id);
   if(!canJoker(j)){
     sfx('wrong');
-    toast(S.points<j.cost?`Bu joker için ${j.cost} puan lazım. Doğru cevaplarla puan topla!`:'Bu joker şu an kullanılamaz.',S.points<j.cost?'💰':'🔒');
+    const why=jokerBlock(j)||(j.id==='heart'?'Ekstra Can sadece 1 canın kaldığında kullanılabilir.':'Bu joker şu an kullanılamaz.');
+    toast(why,S.points<j.cost?'💰':'🔒');
     return;
   }
-  addPoints(-j.cost);sfx('joker');award('joker');
+  addPoints(-j.cost);sfx('joker');award('joker');G.jokersUsed.push(id);
   const q=G.q;
   if(id==='hint'){
     G.hint=true;
@@ -1171,23 +1180,24 @@ function renderMap(){
 }
 
 function jokersHTML(){
-  return `<div class="jlist">${JOKERS.map(j=>`<button class="jkb" data-a="joker" data-v="${j.id}" ${canJoker(j)?'':'disabled'}>
+  return `<div class="jlist">${JOKERS.map(j=>`<button class="jkb${canJoker(j)?'':' off'}" data-a="joker" data-v="${j.id}" ${canJoker(j)?'':'aria-disabled="true"'}>
     <span class="ji">${im(j.icon)}</span><span><b>${j.name}</b><small>${j.desc}</small></span><span class="cost">${im('⭐')}${j.cost}</span></button>`).join('')}</div>`;
 }
 
+function jokerLeft(){return G?`<b>(Bu tur: ${Math.max(0,JOKER_LIMIT-(G.jokersUsed||[]).length)}/${JOKER_LIMIT} hak)</b>`:'';}
 function jbar(){
-  return `<div class="jbar">${JOKERS.map(j=>`<button class="jround" data-a="joker" data-v="${j.id}" ${canJoker(j)?'':'disabled'} aria-label="${j.name}">${im(j.icon)}<span>${j.name}</span><span class="c">${im('⭐')}${j.cost}</span></button>`).join('')}</div>`;
+  return `<div class="jbar">${JOKERS.map(j=>`<button class="jround${canJoker(j)?'':' off'}" data-a="joker" data-v="${j.id}" ${canJoker(j)?'':'aria-disabled="true"'} aria-label="${j.name}">${im(j.icon)}<span>${j.name}</span><span class="c">${im('⭐')}${j.cost}</span></button>`).join('')}</div>`;
 }
 function renderSide(){
   let h='';
   if(UI.screen==='quiz'&&G){
-    h+=`<div class="panel jkpanel"><h3>${im('🃏')}Jokerlerin</h3><p class="sub">Kazandığın puanlarla joker kullan!</p>${jokersHTML()}</div>`;
+    h+=`<div class="panel jkpanel"><h3>${im('🃏')}Jokerlerin</h3><p class="sub">Jokerler pahalı, zor anlar için sakla! ${jokerLeft()}</p>${jokersHTML()}</div>`;
   }else{
     h+=`<div class="panel"><h3>${im('💡')}Nasıl oynanır?</h3><ul class="tips">
       <li>${im('✅')}<span>Doğru cevap: <b>+10 puan</b></span></li>
       <li>${im('🔥')}<span>Üst üste 3 doğru: <b>+5 bonus</b></span></li>
       <li>${im('❌')}<span>Yanlış cevap: <b>−5 puan</b>, 1 can</span></li>
-      <li>${im('🃏')}<span>Puanlarınla joker kullan</span></li>
+      <li>${im('🃏')}<span>Jokerler <b>50–150 puan</b>, turda en çok <b>2</b></span></li>
       <li>${im('🏝️')}<span>Adayı bitir: <b>+20 bonus</b></span></li></ul></div>`;
   }
   h+=`<div><div class="bubble">${UI.msg}</div><div class="mwrap">${mascotSVG(UI.mood,UI.manim)}</div>
@@ -1221,7 +1231,7 @@ function vHome(){
   <div class="rules">
     <div class="rule">${im('🎧')}Dinle<small>Her kelimenin İngilizce okunuşunu duy</small></div>
     <div class="rule">${im('⭐')}Puan kazan<small>Doğru cevap +10 puan</small></div>
-    <div class="rule">${im('🃏')}Joker kullan<small>Puanlarınla yardım iste</small></div>
+    <div class="rule">${im('🃏')}Joker kullan<small>Zor anlarda, bol puanla</small></div>
     <div class="rule">${im('🏆')}Rozet topla<small>10 rozetin hepsini kazan</small></div>
   </div></div>`;
 }
@@ -1299,7 +1309,7 @@ function vQuiz(){
     const ans=`<span class="ans"><b>${esc(q.type==='gram'?it.a:it.en)}</b> = ${esc(it.tr)} ${miniSay(sayT)}</span>`;
     if(G.skipped)fb=`<div class="fb neu">${im('⏭️')}<div class="fbt"><b class="h">Pas geçtin</b>${ans}</div></div>`;
     else if(G.ok)fb=`<div class="fb ok">${im('🥳')}<div class="fbt"><b class="h">${esc(G.praise)}</b>${ans}</div><span class="pill">+${G.gain}${im('⭐')}</span></div>`;
-    else fb=`<div class="fb bad">${im(G.hearts<=0?'💔':'😢')}<div class="fbt"><b class="h">Olmadı!</b>${ans.replace('<span class="ans">','<span class="ans">Doğrusu: ')}${G.hearts<=0?'<span style="font-size:15px">Canın bitti! Ekstra Can jokeriyle devam edebilirsin.</span>':''}</div>${G.gain?`<span class="pill">${G.gain}${im('⭐')}</span>`:''}</div>`;
+    else fb=`<div class="fb bad">${im(G.hearts<=0?'💔':'😢')}<div class="fbt"><b class="h">Olmadı!</b>${ans.replace('<span class="ans">','<span class="ans">Doğrusu: ')}${G.hearts<=0&&canJoker(JOKERS.find(x=>x.id==='heart'))?'<span style="font-size:15px">Canın bitti! Ekstra Can jokeriyle devam edebilirsin.</span>':''}</div>${G.gain?`<span class="pill">${G.gain}${im('⭐')}</span>`:''}</div>`;
   }
   const last=G.idx>=G.items.length-1||G.hearts<=0;
   const btn=G.answered
@@ -1311,7 +1321,7 @@ function vQuiz(){
   <div class="dots">${G.items.map((_,i)=>`<i class="${G.log[i]||''}${i===G.idx&&!G.log[i]?' cur':''}"></i>`).join('')}</div>
   <div class="qmid">${prompt}<div class="instr">${instr}</div>${hint}${body}</div>
   <div class="foot">${fb}${btn}${(!G.answered||G.hearts<=0)?jbar():''}</div>
-  <div class="jinline"><div class="sub" style="text-align:center">Jokerlerin – puanlarınla kullan</div>${jokersHTML()}</div></div>`;
+  <div class="jinline"><div class="sub" style="text-align:center">Jokerler pahalı, zor anlar için sakla! ${jokerLeft()}</div>${jokersHTML()}</div></div>`;
 }
 function vResult(){
   const L=G.level,st=G.stars;
