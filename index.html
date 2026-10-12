@@ -680,7 +680,7 @@ const IMG={"⏭️": "data:image/webp;base64,UklGRkwLAABXRUJQVlA4WAoAAAAQAAAA/wA
 /* ---------- Kelime ve cümle verileri ---------- */
 const GRAM_HINT="‘He’ erkekler, ‘She’ kızlar, ‘It’ eşyalar ve hayvanlar için kullanılır.";
 const LEVELS=[
-  {id:9,name:"Okuldaki Yerler",icon:"🛝",free:true,items:[
+  {id:9,name:"Okuldaki Yerler",icon:"🛝",chain:true,items:[
     {en:"school",tr:"okul",e:"🏫"},
     {en:"classroom",tr:"sınıf",e:"@classroom"},
     {en:"library",tr:"kütüphane",e:"📚"},
@@ -692,7 +692,7 @@ const LEVELS=[
     {en:"garden",tr:"bahçe",e:"@garden"},
     {en:"place",tr:"yer",v:"📍"}
   ]},
-  {id:10,name:"Okuldaki İnsanlar",icon:"👩‍🏫",free:true,items:[
+  {id:10,name:"Okuldaki İnsanlar",icon:"👩‍🏫",chain:true,items:[
     {en:"teacher",tr:"öğretmen",e:"👩‍🏫"},
     {en:"pupil",tr:"öğrenci",e:"@pupil"},
     {en:"headmaster",tr:"erkek okul müdürü",e:"👨‍💼"},
@@ -703,7 +703,7 @@ const LEVELS=[
     {en:"friend",tr:"arkadaş",v:"@friend"},
     {en:"people",tr:"insanlar",v:"👥"}
   ]},
-  {id:11,name:"Günler ve Zaman",icon:"🗓️",free:true,items:[
+  {id:11,name:"Günler ve Zaman",icon:"🗓️",chain:true,items:[
     {en:"Monday",tr:"Pazartesi",cal:"MON",c:"#ef4444"},
     {en:"Tuesday",tr:"Salı",cal:"TUE",c:"#f97316"},
     {en:"Wednesday",tr:"Çarşamba",cal:"WED",c:"#d97706"},
@@ -715,7 +715,7 @@ const LEVELS=[
     {en:"day",tr:"gün",v:"☀️"},
     {en:"week",tr:"hafta",v:"🗓️"}
   ]},
-  {id:12,name:"Selamlaşma ve Tanışma",icon:"🤝",free:true,items:[
+  {id:12,name:"Selamlaşma ve Tanışma",icon:"🤝",chain:true,items:[
     {en:"hello",tr:"merhaba",e:"👋"},
     {en:"hi",tr:"selam",v:"👋"},
     {en:"name",tr:"isim",v:"@name"},
@@ -724,7 +724,7 @@ const LEVELS=[
     {en:"thank you",tr:"teşekkür ederim",v:"🙏"},
     {en:"excuse me",tr:"affedersiniz",e:"🙋"}
   ]},
-  {id:13,name:"Hareketler",icon:"🦘",free:true,items:[
+  {id:13,name:"Hareketler",icon:"🦘",chain:true,items:[
     {en:"jump",tr:"zıplamak",v:"🦘"},
     {en:"sing",tr:"şarkı söylemek",e:"🧑‍🎤"},
     {en:"clap",tr:"alkışlamak",e:"👏"},
@@ -732,7 +732,7 @@ const LEVELS=[
     {en:"start",tr:"başlamak",v:"🚀"},
     {en:"finish",tr:"bitirmek",e:"🏁"}
   ]},
-  {id:14,name:"Soru Kelimeleri ve Diğerleri",icon:"🧐",free:true,items:[
+  {id:14,name:"Soru Kelimeleri ve Diğerleri",icon:"🧐",chain:true,items:[
     {en:"what",tr:"ne",v:"❓"},
     {en:"who",tr:"kim",v:"🧐"},
     {en:"where",tr:"nerede",e:"🔍"},
@@ -869,7 +869,8 @@ function load(){try{const r=localStorage.getItem(SKEY);if(r)return Object.assign
 function save(){try{localStorage.setItem(SKEY,JSON.stringify(S));}catch(e){}}
 let S=load();
 
-const isOpen=id=>S.allOpen||id<=S.unlocked||!!(LV(id)&&LV(id).free);
+const CHAIN=()=>LEVELS.filter(l=>l.chain);
+const isOpen=id=>{if(S.allOpen)return true;const L=LV(id);if(L&&L.chain){const C=CHAIN(),i=C.indexOf(L);return i===0||(S.stars[C[i-1].id]||0)>0;}return id<=S.unlocked;};
 const doneCount=()=>LEVELS.filter(l=>(S.stars[l.id]||0)>0).length;
 const openLevelIds=()=>LEVELS.filter(l=>!l.review&&isOpen(l.id)).map(l=>l.id);
 const curLevel=()=>{for(const l of LEVELS){if(isOpen(l.id)&&!(S.stars[l.id]>0))return l.id;}return LEVELS[LEVELS.length-1].id;};
@@ -1069,7 +1070,9 @@ function finish(){
   if(!G.failed){
     if(G.mode==='level'||G.mode==='final'){
       const id=G.level.id;
+      const C=CHAIN(),ci=C.indexOf(G.level),nxC=ci>=0?C[ci+1]:null,wasOpen=nxC?isOpen(nxC.id):true;
       S.stars[id]=Math.max(S.stars[id]||0,stars);
+      if(nxC&&!wasOpen&&isOpen(nxC.id))G.unlockedNew=nxC.id;
       if(S.unlocked<=id&&id<8){S.unlocked=id+1;G.unlockedNew=id+1;}
       bonus=20+(stars===3?10:0);
       if(id===1)award('ada1');
