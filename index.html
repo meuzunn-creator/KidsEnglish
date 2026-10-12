@@ -680,61 +680,65 @@ const IMG={"⏭️": "data:image/webp;base64,UklGRkwLAABXRUJQVlA4WAoAAAAQAAAA/wA
 /* ---------- Kelime ve cümle verileri ---------- */
 const GRAM_HINT="‘He’ erkekler, ‘She’ kızlar, ‘It’ eşyalar ve hayvanlar için kullanılır.";
 const LEVELS=[
-  {id:9,name:"Sözlük 1",icon:"📖",free:true,items:[
-    {en:"teacher",tr:"öğretmen",e:"👩‍🏫"},
-    {en:"garden",tr:"bahçe",e:"@garden"},
-    {en:"Saturday",tr:"Cumartesi",cal:"SAT",c:"#7c3aed"},
-    {en:"jump",tr:"zıplamak",v:"🦘"},
-    {en:"name",tr:"isim",v:"@name"},
-    {en:"canteen",tr:"kantin",e:"@canteen"},
-    {en:"today",tr:"bugün",v:"📅"},
-    {en:"friend",tr:"arkadaş",v:"@friend"},
-    {en:"sports hall",tr:"spor salonu",e:"🏀"},
-    {en:"how",tr:"nasıl",v:"🤔"},
-    {en:"Sunday",tr:"Pazar",cal:"SUN",c:"#db2777"},
-    {en:"library",tr:"kütüphane",e:"📚"}
-  ]},
-  {id:10,name:"Sözlük 2",icon:"📖",free:true,items:[
-    {en:"big",tr:"büyük",v:"🐘"},
-    {en:"meet",tr:"tanışmak",e:"🤝"},
-    {en:"Thursday",tr:"Perşembe",cal:"THU",c:"#16a34a"},
-    {en:"pupil",tr:"öğrenci",e:"@pupil"},
-    {en:"fine",tr:"iyi",e:"👍"},
+  {id:9,name:"Okuldaki Yerler",icon:"🛝",free:true,items:[
+    {en:"school",tr:"okul",e:"🏫"},
     {en:"classroom",tr:"sınıf",e:"@classroom"},
-    {en:"wait",tr:"beklemek",v:"⏳"},
-    {en:"headmaster",tr:"erkek okul müdürü",e:"👨‍💼"},
-    {en:"Monday",tr:"Pazartesi",cal:"MON",c:"#ef4444"},
-    {en:"sing",tr:"şarkı söylemek",e:"🧑‍🎤"},
-    {en:"girl",tr:"kız çocuk",e:"👧"},
+    {en:"library",tr:"kütüphane",e:"📚"},
+    {en:"playground",tr:"oyun alanı",e:"🛝"},
+    {en:"sports hall",tr:"spor salonu",e:"🏀"},
+    {en:"lunch hall",tr:"yemekhane",e:"@lunchhall"},
+    {en:"canteen",tr:"kantin",e:"@canteen"},
+    {en:"teacher's room",tr:"öğretmenler odası",v:"@teachersroom"},
+    {en:"garden",tr:"bahçe",e:"@garden"},
     {en:"place",tr:"yer",v:"📍"}
   ]},
-  {id:11,name:"Sözlük 3",icon:"📖",free:true,items:[
-    {en:"thank you",tr:"teşekkür ederim",v:"🙏"},
-    {en:"finish",tr:"bitirmek",e:"🏁"},
-    {en:"people",tr:"insanlar",v:"👥"},
-    {en:"Wednesday",tr:"Çarşamba",cal:"WED",c:"#d97706"},
-    {en:"playground",tr:"oyun alanı",e:"🛝"},
+  {id:10,name:"Okuldaki İnsanlar",icon:"👩‍🏫",free:true,items:[
+    {en:"teacher",tr:"öğretmen",e:"👩‍🏫"},
+    {en:"pupil",tr:"öğrenci",e:"@pupil"},
+    {en:"headmaster",tr:"erkek okul müdürü",e:"👨‍💼"},
+    {en:"headmistress",tr:"kadın okul müdürü",e:"👩‍💼"},
     {en:"boy",tr:"erkek çocuk",e:"👦"},
-    {en:"together",tr:"birlikte",v:"@together"},
-    {en:"hello",tr:"merhaba",e:"👋"},
-    {en:"lunch hall",tr:"yemekhane",e:"@lunchhall"},
-    {en:"what",tr:"ne",v:"❓"},
-    {en:"start",tr:"başlamak",v:"🚀"},
-    {en:"headmistress",tr:"kadın okul müdürü",e:"👩‍💼"}
-  ]},
-  {id:12,name:"Sözlük 4",icon:"📖",free:true,items:[
-    {en:"Tuesday",tr:"Salı",cal:"TUE",c:"#f97316"},
-    {en:"excuse me",tr:"affedersiniz",e:"🙋"},
+    {en:"girl",tr:"kız çocuk",e:"👧"},
     {en:"kid",tr:"çocuk",v:"🧒"},
-    {en:"week",tr:"hafta",v:"🗓️"},
-    {en:"hi",tr:"selam",v:"👋"},
+    {en:"friend",tr:"arkadaş",v:"@friend"},
+    {en:"people",tr:"insanlar",v:"👥"}
+  ]},
+  {id:11,name:"Günler ve Zaman",icon:"🗓️",free:true,items:[
+    {en:"Monday",tr:"Pazartesi",cal:"MON",c:"#ef4444"},
+    {en:"Tuesday",tr:"Salı",cal:"TUE",c:"#f97316"},
+    {en:"Wednesday",tr:"Çarşamba",cal:"WED",c:"#d97706"},
+    {en:"Thursday",tr:"Perşembe",cal:"THU",c:"#16a34a"},
     {en:"Friday",tr:"Cuma",cal:"FRI",c:"#2563eb"},
-    {en:"where",tr:"nerede",e:"🔍"},
-    {en:"teacher's room",tr:"öğretmenler odası",v:"@teachersroom"},
-    {en:"clap",tr:"alkışlamak",e:"👏"},
-    {en:"who",tr:"kim",v:"🧐"},
+    {en:"Saturday",tr:"Cumartesi",cal:"SAT",c:"#7c3aed"},
+    {en:"Sunday",tr:"Pazar",cal:"SUN",c:"#db2777"},
+    {en:"today",tr:"bugün",v:"📅"},
     {en:"day",tr:"gün",v:"☀️"},
-    {en:"school",tr:"okul",e:"🏫"}
+    {en:"week",tr:"hafta",v:"🗓️"}
+  ]},
+  {id:12,name:"Selamlaşma ve Tanışma",icon:"🤝",free:true,items:[
+    {en:"hello",tr:"merhaba",e:"👋"},
+    {en:"hi",tr:"selam",v:"👋"},
+    {en:"name",tr:"isim",v:"@name"},
+    {en:"meet",tr:"tanışmak",e:"🤝"},
+    {en:"fine",tr:"iyi",e:"👍"},
+    {en:"thank you",tr:"teşekkür ederim",v:"🙏"},
+    {en:"excuse me",tr:"affedersiniz",e:"🙋"}
+  ]},
+  {id:13,name:"Hareketler",icon:"🦘",free:true,items:[
+    {en:"jump",tr:"zıplamak",v:"🦘"},
+    {en:"sing",tr:"şarkı söylemek",e:"🧑‍🎤"},
+    {en:"clap",tr:"alkışlamak",e:"👏"},
+    {en:"wait",tr:"beklemek",v:"⏳"},
+    {en:"start",tr:"başlamak",v:"🚀"},
+    {en:"finish",tr:"bitirmek",e:"🏁"}
+  ]},
+  {id:14,name:"Soru Kelimeleri ve Diğerleri",icon:"🧐",free:true,items:[
+    {en:"what",tr:"ne",v:"❓"},
+    {en:"who",tr:"kim",v:"🧐"},
+    {en:"where",tr:"nerede",e:"🔍"},
+    {en:"how",tr:"nasıl",v:"🤔"},
+    {en:"big",tr:"büyük",v:"🐘"},
+    {en:"together",tr:"birlikte",v:"@together"}
   ]},
   {id:1,name:"Kıyafetler",icon:"👕",items:[
     {en:"Jacket",tr:"Ceket",e:"🧥"},
