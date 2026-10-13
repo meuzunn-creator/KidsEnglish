@@ -828,19 +828,11 @@ const ALL=[],BYKEY={};
 LEVELS.forEach(L=>(L.items||[]).forEach(it=>{it.lv=L.id;it.key=L.id+'|'+it.en;ALL.push(it);BYKEY[it.key]=it;}));
 const LV=id=>LEVELS.find(l=>l.id===id);
 
-const JOKERS=[
-  {id:'hint', icon:'💡',name:'İpucu',cost:50, desc:'Türkçesini ya da ilk harfleri gör'},
-  {id:'skip', icon:'⏭️',name:'Pas Geç',cost:80,desc:'Soruyu cezasız geç'},
-  {id:'half', icon:'✂️',name:'Yarı Yarıya',cost:100,desc:'İki yanlış şıkkı sil'},
-  {id:'heart',icon:'❤️',name:'Ekstra Can',cost:150,desc:'Sadece 1 canın kalınca (en çok 3)'}
-];
-const JOKER_LIMIT=2; // bir turda en fazla kaç joker kullanılabilir
 const BADGES=[
   {id:'ilk',i:'🌟',n:'İlk Adım',d:'İlk doğru cevabını ver'},
   {id:'seri5',i:'🔥',n:'Seri Ustası',d:'Üst üste 5 doğru yap'},
   {id:'ada1',i:'🏝️',n:'Kaşif',d:'İlk adayı bitir'},
   {id:'yildiz3',i:'⭐',n:'Mükemmel',d:'Bir adada 3 yıldız al'},
-  {id:'joker',i:'🃏',n:'Jokerci',d:'İlk jokerini kullan'},
   {id:'puan100',i:'💰',n:'Puan Avcısı',d:'100 puana ulaş'},
   {id:'puan300',i:'👑',n:'Hazine Sahibi',d:'300 puana ulaş'},
   {id:'tekrar',i:'🔁',n:'Tekrar Kahramanı',d:'Bir tekrar turunu bitir'},
@@ -888,7 +880,6 @@ const SFX={
   coin(){tone(988,0,.08,'square',.05);tone(1319,.07,.22,'square',.05);},
   flip(){tone(400,0,.12,'sine',.1);tone(600,.06,.12,'sine',.1);},
   win(){[523,659,784,659,784,1047,1319].forEach((f,i)=>tone(f,i*.13,.34,'triangle',.17));},
-  joker(){[400,600,800,1100].forEach((f,i)=>tone(f,i*.05,.14,'sine',.12));}
 };
 function sfx(n){if(S.sound){try{SFX[n]();}catch(e){}}}
 let MUS=null;
@@ -1014,7 +1005,7 @@ function startReview(kind){
   beginQuiz({mode:'review',kind,level:{id:'r',name:kind==='wrong'?'Yanlışlarımı Tekrar':'Karışık Tekrar',icon:'🔁'},items});
 }
 function beginQuiz(o){
-  G=Object.assign(o,{idx:0,hearts:o.mode==='review'?Infinity:3,jokersUsed:[],correct:0,wrongN:0,skips:0,streak:0,failed:false,log:[],wrongItems:[],lastType:null});
+  G=Object.assign(o,{idx:0,hearts:o.mode==='review'?Infinity:3,correct:0,wrongN:0,skips:0,streak:0,failed:false,log:[],wrongItems:[],lastType:null});
   UI.screen='quiz';
   mascot('happy',o.mode==='review'?'Tekrar zamanı! Burada canın sonsuz, rahatça dene. 💙':'Hadi başlayalım! Her doğru cevap +10 puan! ⭐','jump');
   loadQ();
@@ -1057,7 +1048,7 @@ function check(){
     S.wrong[it.key]=(S.wrong[it.key]||0)+1;
     if(G.mode!=='review')G.hearts--;
     sfx('wrong');redFlash();
-    mascot('sad',G.hearts<=0?(canJoker(JOKERS.find(x=>x.id==='heart'))?'Canın bitti! İstersen ❤️ Ekstra Can jokeriyle devam edebilirsin.':'Canın bitti! Bir dahaki sefere başaracaksın. 💪'):pick(ENCOURAGE),'shake');
+    mascot('sad',G.hearts<=0?'Canın bitti! Bir dahaki sefere başaracaksın. 💪':pick(ENCOURAGE),'shake');
     save();render();
   }
   setTimeout(()=>speak(q.type==='gram'?it.a:it.en),ok?650:800);
@@ -1094,50 +1085,6 @@ function addPoints(n){
   if(S.points>=100)award('puan100');
   if(S.points>=300)award('puan300');
   save();
-}
-
-/* ---------- Jokerler ---------- */
-function jokerBlock(j){
-  if(UI.screen!=='quiz'||!G)return 'Jokerler sadece oyun sırasında kullanılır.';
-  const used=G.jokersUsed||[];
-  if(used.includes(j.id))return 'Bu jokeri bu turda zaten kullandın.';
-  if(used.length>=JOKER_LIMIT)return `Bir turda en fazla ${JOKER_LIMIT} joker kullanabilirsin.`;
-  if(S.points<j.cost)return `Bu joker için ${j.cost} puan lazım. Doğru cevaplarla puan topla!`;
-  return '';
-}
-function canJoker(j){
-  if(jokerBlock(j))return false;
-  if(j.id==='heart')return G.mode!=='review'&&G.hearts<=1&&(!G.answered||G.hearts<=0);
-  if(G.answered)return false;
-  if(j.id==='hint')return !G.hint;
-  if(j.id==='half')return G.q.type!=='order'&&G.q.type!=='gram'&&!G.removed.length;
-  return true;
-}
-function useJoker(id){
-  const j=JOKERS.find(x=>x.id===id);
-  if(!canJoker(j)){
-    sfx('wrong');
-    const why=jokerBlock(j)||(j.id==='heart'?'Ekstra Can sadece 1 canın kaldığında kullanılabilir.':'Bu joker şu an kullanılamaz.');
-    toast(why,S.points<j.cost?'💰':'🔒');
-    return;
-  }
-  addPoints(-j.cost);sfx('joker');award('joker');G.jokersUsed.push(id);
-  const q=G.q;
-  if(id==='hint'){
-    G.hint=true;
-    if(q.type==='order'){const first=q.item.en.split(' ')[0];G.built=[q.tiles.indexOf(first)];}
-  }else if(id==='half'){
-    const wrongIdx=q.opts.map((o,i)=>i).filter(i=>q.opts[i]!==q.item);
-    G.removed=shuffle(wrongIdx).slice(0,2);
-    if(G.removed.includes(G.sel))G.sel=null;
-  }else if(id==='skip'){
-    G.answered=true;G.skipped=true;G.skips++;G.log[G.idx]='skip';
-    mascot('happy','Bu soruyu geçtik. Doğru cevabı aklında tut! 😉');
-    setTimeout(()=>speak(q.type==='gram'?q.item.a:q.item.en),400);
-  }else if(id==='heart'){
-    G.hearts++;mascot('happy','Bir can daha kazandın! ❤️ Devam!','jump');
-  }
-  save();render();
 }
 
 /* ---------- Efektler ---------- */
@@ -1243,25 +1190,13 @@ function renderMap(){
   <div class="chest">${im('💎')}</div>`;
 }
 
-function jokersHTML(){
-  return `<div class="jlist">${JOKERS.map(j=>`<button class="jkb${canJoker(j)?'':' off'}" data-a="joker" data-v="${j.id}" ${canJoker(j)?'':'aria-disabled="true"'}>
-    <span class="ji">${im(j.icon)}</span><span><b>${j.name}</b><small>${j.desc}</small></span><span class="cost">${im('⭐')}${j.cost}</span></button>`).join('')}</div>`;
-}
-
-function jokerLeft(){return G?`<b>(Bu tur: ${Math.max(0,JOKER_LIMIT-(G.jokersUsed||[]).length)}/${JOKER_LIMIT} hak)</b>`:'';}
-function jbar(){
-  return `<div class="jbar">${JOKERS.map(j=>`<button class="jround${canJoker(j)?'':' off'}" data-a="joker" data-v="${j.id}" ${canJoker(j)?'':'aria-disabled="true"'} aria-label="${j.name}">${im(j.icon)}<span>${j.name}</span><span class="c">${im('⭐')}${j.cost}</span></button>`).join('')}</div>`;
-}
 function renderSide(){
   let h='';
-  if(UI.screen==='quiz'&&G){
-    h+=`<div class="panel jkpanel"><h3>${im('🃏')}Jokerlerin</h3><p class="sub">Jokerler pahalı, zor anlar için sakla! ${jokerLeft()}</p>${jokersHTML()}</div>`;
-  }else{
+  {
     h+=`<div class="panel"><h3>${im('💡')}Nasıl oynanır?</h3><ul class="tips">
       <li>${im('✅')}<span>Doğru cevap: <b>+10 puan</b></span></li>
       <li>${im('🔥')}<span>Üst üste 3 doğru: <b>+5 bonus</b></span></li>
       <li>${im('❌')}<span>Yanlış cevap: <b>−5 puan</b>, 1 can</span></li>
-      <li>${im('🃏')}<span>Jokerler <b>50–150 puan</b>, turda en çok <b>2</b></span></li>
       <li>${im('🏝️')}<span>Adayı bitir: <b>+20 bonus</b></span></li></ul></div>`;
   }
   h+=`<div><div class="bubble">${UI.msg}</div><div class="mwrap">${mascotSVG(UI.mood,UI.manim)}</div>
@@ -1295,8 +1230,8 @@ function vHome(){
   <div class="rules">
     <div class="rule">${im('🎧')}Dinle<small>Her kelimenin İngilizce okunuşunu duy</small></div>
     <div class="rule">${im('⭐')}Puan kazan<small>Doğru cevap +10 puan</small></div>
-    <div class="rule">${im('🃏')}Joker kullan<small>Zor anlarda, bol puanla</small></div>
-    <div class="rule">${im('🏆')}Rozet topla<small>10 rozetin hepsini kazan</small></div>
+    <div class="rule">${im('🧩')}Cümle kur<small>Kelimeleri doğru sıraya diz</small></div>
+    <div class="rule">${im('🏆')}Rozet topla<small>Bütün rozetleri kazan</small></div>
   </div></div>`;
 }
 function vIntro(){
@@ -1335,7 +1270,7 @@ function vQuiz(){
     case 'pic':prompt=`<div class="prow">${spk(it.en)}<div class="word">${esc(it.en)}</div></div>`;instr=`Hangi resim “${esc(it.en)}”?`;break;
     case 'en2tr':prompt=`<div class="prow">${spk(it.en)}<div class="word">${esc(it.en)}</div></div>`;instr=`“${esc(it.en)}” ne demek?`;break;
     case 'tr2en':prompt=`<div class="prow"><div class="word tr">${esc(it.tr)}</div></div>`;instr='Bunun İngilizcesi hangisi?';break;
-    case 'listen':prompt=`<div class="prow">${spk(it.en,true)}${slowBtn(it.en)}</div>`;instr=`${im('🎧')}Dinle ve duyduğunu seç!`;break;
+    case 'listen':prompt=`<div class="prow">${spk(it.en,true)}${slowBtn(it.en)}</div>`;instr=`${im('🎧')}Dinle! Türkçesi hangisi?`;break;
     case 'picword':prompt=`<div class="prow"><div class="bigvis">${im(it.e)}</div></div>`;instr='Bu resmin İngilizcesi hangisi?';break;
     case 'order':prompt=`<div class="prow">${spk(it.en)}<div class="word tr sm">${esc(it.tr)}</div></div>`;instr=`${im('🧩')}Kelimeleri doğru sıraya diz!`;break;
     case 'gram':prompt=`<div class="prow"><div class="bigvis">${im(it.e)}</div><div class="word sm">${esc(it.q)}</div></div>`;instr='Doğru kelimeyi seç!';break;
@@ -1363,7 +1298,7 @@ function vQuiz(){
       let label;
       if(q.type==='gram')label=esc(o);
       else if(q.type==='pic')label=im(o.e);
-      else{label=esc(q.type==='en2tr'?o.tr:o.en);if(label.length>14)c+=' txt';}
+      else{label=esc(q.type==='en2tr'||q.type==='listen'?o.tr:o.en);if(label.length>14)c+=' txt';}
       return `<button class="opt${c}" data-a="opt" data-v="${i}" ${G.answered?'disabled':''} aria-label="Seçenek ${i+1}"><span class="key">${'ABCD'[i]}</span>${label}</button>`;
     }).join('')}</div>`;
   }
@@ -1373,7 +1308,7 @@ function vQuiz(){
     const ans=`<span class="ans"><b>${esc(q.type==='gram'?it.a:it.en)}</b> = ${esc(it.tr)} ${miniSay(sayT)}</span>`;
     if(G.skipped)fb=`<div class="fb neu">${im('⏭️')}<div class="fbt"><b class="h">Pas geçtin</b>${ans}</div></div>`;
     else if(G.ok)fb=`<div class="fb ok">${im('🥳')}<div class="fbt"><b class="h">${esc(G.praise)}</b>${ans}</div><span class="pill">+${G.gain}${im('⭐')}</span></div>`;
-    else fb=`<div class="fb bad">${im(G.hearts<=0?'💔':'😢')}<div class="fbt"><b class="h">Olmadı!</b>${ans.replace('<span class="ans">','<span class="ans">Doğrusu: ')}${G.hearts<=0&&canJoker(JOKERS.find(x=>x.id==='heart'))?'<span style="font-size:15px">Canın bitti! Ekstra Can jokeriyle devam edebilirsin.</span>':''}</div>${G.gain?`<span class="pill">${G.gain}${im('⭐')}</span>`:''}</div>`;
+    else fb=`<div class="fb bad">${im(G.hearts<=0?'💔':'😢')}<div class="fbt"><b class="h">Olmadı!</b>${ans.replace('<span class="ans">','<span class="ans">Doğrusu: ')}</div>${G.gain?`<span class="pill">${G.gain}${im('⭐')}</span>`:''}</div>`;
   }
   const last=G.idx>=G.items.length-1||G.hearts<=0;
   const btn=G.answered
@@ -1384,8 +1319,7 @@ function vQuiz(){
   <div class="qhead">Soru ${G.idx+1} / ${G.items.length}</div>
   <div class="dots">${G.items.map((_,i)=>`<i class="${G.log[i]||''}${i===G.idx&&!G.log[i]?' cur':''}"></i>`).join('')}</div>
   <div class="qmid">${prompt}<div class="instr">${instr}</div>${hint}${body}</div>
-  <div class="foot">${fb}${btn}${(!G.answered||G.hearts<=0)?jbar():''}</div>
-  <div class="jinline"><div class="sub" style="text-align:center">Jokerler pahalı, zor anlar için sakla! ${jokerLeft()}</div>${jokersHTML()}</div></div>`;
+  <div class="foot">${fb}${btn}</div></div>`;
 }
 function vResult(){
   const L=G.level,st=G.stars;
@@ -1432,7 +1366,7 @@ function vBook(){
 }
 function vBadges(){
   return `<div class="card">${ribbon('🏆','Rozetler')}
-  <p class="lead center" style="margin-bottom:14px">${S.badges.length} / ${BADGES.length} rozet kazandın</p>
+  <p class="lead center" style="margin-bottom:14px">${S.badges.filter(b=>BADGES.some(x=>x.id===b)).length} / ${BADGES.length} rozet kazandın</p>
   <div class="bgrid">${BADGES.map(b=>{const has=S.badges.includes(b.id);return `<div class="badge${has?'':' off'}">${im(has?b.i:'🔒')}${b.n}<small>${b.d}</small></div>`;}).join('')}</div>
   <button class="cta" data-a="close">Tamam</button></div>`;
 }
@@ -1507,7 +1441,7 @@ document.addEventListener('click',e=>{
   const el=e.target.closest('[data-a]');if(!el||el.disabled)return;
   const a=el.dataset.a,v=el.dataset.v;
   ac();
-  if(!['say','sayslow','opt','tile','untile','check','joker','flip'].includes(a))sfx('click');
+  if(!['say','sayslow','opt','tile','untile','check','flip'].includes(a))sfx('click');
   switch(a){
     case 'start':$('#splash').classList.add('out');setTimeout(()=>$('#splash').remove(),550);musicStart();speak('Welcome to Word Islands!');break;
     case 'home':leaveQuiz(()=>{mascot('happy',DEFAULT_MSG);goScreen('home');});break;
@@ -1527,7 +1461,6 @@ document.addEventListener('click',e=>{
     case 'untile':if(G&&!G.answered){G.built.splice(+v,1);sfx('click');render();}break;
     case 'check':check();break;
     case 'next':nextQ();break;
-    case 'joker':useJoker(v);break;
     case 'exit':{const lvl=G&&typeof G.level.id==='number'?G.level.id:null;
       leaveQuiz(()=>{mascot('happy',DEFAULT_MSG);if(lvl)goScreen('intro',{level:lvl});else goScreen('review');});break;}
     case 'review':leaveQuiz(()=>{mascot('happy','Tekrar etmek hafızayı güçlendirir! 🧠');goScreen('review');});break;
